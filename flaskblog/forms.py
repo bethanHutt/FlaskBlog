@@ -6,6 +6,7 @@ from wtforms import StringField
 from wtforms import SubmitField
 from wtforms import BooleanField
 from wtforms import PasswordField
+from wtforms import TextAreaField
 
 from wtforms.validators import Email
 from wtforms.validators import Length
@@ -100,6 +101,11 @@ class UpdateAccountForm(FlaskForm):
 
 
 class LoginForm(FormBase):
-
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
+
+
+class PostForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    content = TextAreaField('Content', validators=[DataRequired()])
+    submit = SubmitField('Post')

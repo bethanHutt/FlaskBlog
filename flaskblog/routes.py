@@ -1,5 +1,4 @@
 import os
-import sys
 import secrets
 
 from PIL import Image
@@ -22,30 +21,16 @@ from flaskblog import bcrypt
 from flaskblog.forms import LoginForm
 from flaskblog.forms import RegistrationForm
 from flaskblog.forms import UpdateAccountForm
+from flaskblog.forms import PostForm
 
 from flaskblog.models import Post
 from flaskblog.models import User
 
 
-posts = [
-    {
-        'author': 'Corey Schafer',
-        'title': 'Blog Post 1',
-        'content': 'First post content',
-        'data_posted': 'April 20 2018'
-    },
-    {
-        'author': 'Beth Hutt',
-        'title': 'Blog Post 2',
-        'content': 'Second post content',
-        'data_posted': 'April 21 2018'
-    }
-]
-
-
 @app.route('/')
 @app.route('/home')
 def home():
+    posts = Post.query.all()
     return render_template('home.html', posts=posts)
 
 
@@ -106,10 +91,8 @@ def logout():
 @ login_required
 def account():
     form = UpdateAccountForm()
-    print('>>>>>>>>>>>> GET', file=sys.stdout)
 
     if form.validate_on_submit():
-        print('>>>>>>>>>>>> HERE', file=sys.stdout)
         if form.picture.data:
             picture_file = save_picture(form.picture.data)
             current_user.image_file = picture_file
@@ -122,7 +105,6 @@ def account():
         return redirect(url_for('account'))
 
     elif request.method == 'GET':
-        print('>>>>>>>>>>>> GET', file=sys.stdout)
         form.username.data = current_user.username
         form.email.data = current_user.email
 
@@ -131,6 +113,22 @@ def account():
 
     return render_template(
         'account.html', title='Account', image_file=image_file, form=form)
+
+
+@app.route('/post/new', methods=['GET', 'POST'])
+@login_required
+def new_post():
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(title=form.title.data,
+                    content=form.content.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+
+        flash('Your post has been creaed!', 'success')
+        return redirect(url_for('home'))
+
+    return render_template('create_post.html', title='New Post', form=form)
 
 
 def save_picture(form_picture):
