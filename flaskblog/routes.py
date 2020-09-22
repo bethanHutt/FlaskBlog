@@ -15,17 +15,22 @@ from flask_login import logout_user
 from flask_login import current_user
 from flask_login import login_required
 
-from flaskblog import app
 from flaskblog import db
+from flaskblog import app
+from flaskblog import mail
 from flaskblog import bcrypt
 
+from flaskblog.forms import PostForm
 from flaskblog.forms import LoginForm
 from flaskblog.forms import RegistrationForm
+from flaskblog.forms import RequestResetForm
+from flaskblog.forms import ResetPasswordForm
 from flaskblog.forms import UpdateAccountForm
-from flaskblog.forms import PostForm
 
 from flaskblog.models import Post
 from flaskblog.models import User
+
+from flask_mail import Message
 
 
 @app.route('/')
@@ -119,6 +124,22 @@ def account():
         'account.html', title='Account', image_file=image_file, form=form)
 
 
+def save_picture(form_picture):
+    random_hex = secrets.token_hex(8)
+    _, extension = os.path.splitext(form_picture.filename)
+    filename = random_hex + extension
+    picture_path = os.path.join(
+        app.root_path, 'static', 'profile_pics', filename)
+
+    output_size = (125, 125)
+    image = Image.open(form_picture)
+    image.thumbnail(output_size)
+
+    image.save(picture_path)
+
+    return filename
+
+
 @app.route('/post/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
@@ -193,17 +214,61 @@ def user_posts(username):
     return render_template('user_posts.html', posts=posts, user=user)
 
 
-def save_picture(form_picture):
-    random_hex = secrets.token_hex(8)
-    _, extension = os.path.splitext(form_picture.filename)
-    filename = random_hex + extension
-    picture_path = os.path.join(
-        app.root_path, 'static', 'profile_pics', filename)
+def send_reset_email(user):
+    token = user.get_reset_token()
 
-    output_size = (125, 125)
-    image = Image.open(form_picture)
-    image.thumbnail(output_size)
+    msg = Message('Password Reset Request',
+                  sender='bethanhutt@gmail.com',
+                  recipients=[user.email])
 
-    image.save(picture_path)
+    msg.body = f"""To reset your password, visit the following link:
+{url_for('reset_token', token=token, _external=True)}
 
-    return filename
+
+If you did not make this request then ignore this email.  Or panic.
+    """
+
+    mail.send(msg)
+
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
+    form = RequestResetForm()
+
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        send_reset_email(user=user)
+        flash('An email has been sent.', 'info')
+
+        return redirect(url_for('login'))
+
+    return render_template('reset_request.html', title='Reset Password', form=form)
+
+
+@app.route('/reset_password/<string:token>', methods=['GET', 'POST'])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
+    user = user.verify_reset_token(token)
+
+    if user is None:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('reset_request'))
+
+    form = ResetPasswordForm()
+
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(
+            form.password.data).decode('utf-8')
+
+        user.password = hashed_password
+
+        db.session.commit()
+        flash('Password has been reset.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('reset_token.html', title='Reset Password', form=form)
