@@ -38,7 +38,7 @@ class User(db.Model, UserMixin):
         serializer = Serializer(app.config['SECRET_KEY'])
 
         try:
-            user_id = s.loads(token)['user_id']
+            user_id = serializer.loads(token)['user_id']
         except:
             return None
 
