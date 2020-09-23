@@ -4,10 +4,10 @@ import secrets
 from PIL import Image
 
 from flask import url_for
+from flask import current_app
 
 from flask_mail import Message
 
-from flaskblog import app
 from flaskblog import mail
 
 
@@ -16,7 +16,7 @@ def save_picture(form_picture):
     _, extension = os.path.splitext(form_picture.filename)
     filename = random_hex + extension
     picture_path = os.path.join(
-        app.root_path, 'static', 'profile_pics', filename)
+        current_app.root_path, 'static', 'profile_pics', filename)
 
     output_size = (125, 125)
     image = Image.open(form_picture)

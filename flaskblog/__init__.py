@@ -4,33 +4,32 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_mail import Mail
 
-# personal email account secrets not in repo
-from flaskblog.config_secrets import Secrets
+from flaskblog.config import Config
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = '5b1853e65ccc65c68c2563b39f4ca974'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USERNAME'] = Secrets.username
-app.config['MAIL_PASSWORD'] = Secrets.password
-mail = Mail(app)
+db = SQLAlchemy()
+mail = Mail()
+bcrypt = Bcrypt()
+login_manager = LoginManager()
 
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
-
-login_manager = LoginManager(app)
 # function name for login route
 login_manager.login_view = 'users.login'
 login_manager.login_message_category = 'info'
 
 
-from flaskblog.main.routes import main
-from flaskblog.posts.routes import posts
-from flaskblog.users.routes import users
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-app.register_blueprint(main)
-app.register_blueprint(posts)
-app.register_blueprint(users)
+    db.init_app(app)
+    mail.init_app(app)
+    bcrypt.init_app(app)
+    login_manager.init_app(app)
+
+    from flaskblog.main.routes import main
+    from flaskblog.posts.routes import posts
+    from flaskblog.users.routes import users
+    app.register_blueprint(main)
+    app.register_blueprint(posts)
+    app.register_blueprint(users)
+
+    return app
