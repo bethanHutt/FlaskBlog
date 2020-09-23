@@ -6,7 +6,6 @@ from wtforms import StringField
 from wtforms import SubmitField
 from wtforms import BooleanField
 from wtforms import PasswordField
-from wtforms import TextAreaField
 
 from wtforms.validators import Email
 from wtforms.validators import Length
@@ -19,25 +18,23 @@ from flaskblog.models import User
 from flask_login import current_user
 
 
-class FormBase(FlaskForm):
+class RegistrationForm(FlaskForm):
     email = StringField(
         'Email',
         validators=[
             DataRequired(),
             Email()])
 
-    password = PasswordField(
-        'Password',
-        validators=[
-            DataRequired()])
-
-
-class RegistrationForm(FormBase):
     username = StringField(
         'Username',
         validators=[
             DataRequired(),
             Length(min=2, max=20)])
+
+    password = PasswordField(
+        'Password',
+        validators=[
+            DataRequired()])
 
     confirm_password = PasswordField(
         'Confirm Password',
@@ -100,15 +97,20 @@ class UpdateAccountForm(FlaskForm):
             raise ValidationError('That email is already registered.')
 
 
-class LoginForm(FormBase):
+class LoginForm(FlaskForm):
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(),
+            Email()])
+
+    password = PasswordField(
+        'Password',
+        validators=[
+            DataRequired()])
+
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
-
-
-class PostForm(FlaskForm):
-    title = StringField('Title', validators=[DataRequired()])
-    content = TextAreaField('Content', validators=[DataRequired()])
-    submit = SubmitField('Post')
 
 
 class RequestResetForm(FlaskForm):
@@ -124,8 +126,8 @@ class RequestResetForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
 
         if user is None:
-            raise ValidationError(
-                'There is no account with that email.  You must register first.')
+            raise ValidationError('There is no account with that email.'
+                                  ' You must register first.')
 
 
 class ResetPasswordForm(FlaskForm):

@@ -20,10 +20,17 @@ mail = Mail(app)
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+
 login_manager = LoginManager(app)
 # function name for login route
-login_manager.login_view = 'login'
+login_manager.login_view = 'users.login'
 login_manager.login_message_category = 'info'
 
 
-from flaskblog import routes
+from flaskblog.main.routes import main
+from flaskblog.posts.routes import posts
+from flaskblog.users.routes import users
+
+app.register_blueprint(main)
+app.register_blueprint(posts)
+app.register_blueprint(users)
